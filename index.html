@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Genesis · Early Universe Lab</title>
+<meta name="description" content="An interactive early-universe laboratory: reorder cosmic history (reheating, baryogenesis, electroweak and QCD transitions, dark-matter freeze-out, nucleosynthesis, recombination) and see the consequences for antimatter, light elements, the CMB, dark matter, galaxies and dark energy — all computed from the governing equations.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;700&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='5' fill='%23ffd66b'/%3E%3Ccircle cx='16' cy='16' r='11' fill='none' stroke='%237cc4ff' stroke-width='2' stroke-dasharray='3 3'/%3E%3C/svg%3E">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <svg viewBox="0 0 40 40" aria-hidden="true"><defs><radialGradient id="lg" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff6d5"/><stop offset=".35" stop-color="#ffb86b"/><stop offset="1" stop-color="#ff5d73" stop-opacity="0"/></radialGradient></defs><circle cx="20" cy="20" r="18" fill="url(#lg)"/><circle cx="20" cy="20" r="14" fill="none" stroke="#7cc4ff" stroke-width="1.2" stroke-dasharray="2 3"/><circle cx="20" cy="20" r="18.5" fill="none" stroke="#b392ff" stroke-width=".8" stroke-dasharray="1 4"/></svg>
+    <div><h1>GENESIS</h1><span>Early-Universe Laboratory</span></div>
+  </div>
+  <nav id="tabs">
+    <button data-t="seq" class="on">Genesis timeline</button>
+    <button data-t="spacetime">Spacetime &amp; gravity</button>
+    <button data-t="thermal">Thermal history</button>
+    <button data-t="inflation">Inflation</button>
+    <button data-t="bary">Matter &amp; antimatter</button>
+    <button data-t="dm">Dark matter</button>
+    <button data-t="bbn">Nucleosynthesis</button>
+    <button data-t="cmb">Recombination &amp; CMB</button>
+    <button data-t="lss">Galaxies &amp; structure</button>
+    <button data-t="de">Dark energy &amp; fate</button>
+    <button data-t="nu">Neutrinos</button>
+    <button data-t="relics">Relics &amp; black holes</button>
+    <button data-t="data">Fit the data</button>
+    <button data-t="research">Research</button>
+    <button data-t="learn">Lectures &amp; challenges</button>
+    <button data-t="whatif">Gedankenexperiments</button>
+    <button data-t="methods">Methods</button>
+  </nav>
+  <div class="actions">
+    <select class="btn" id="sel-units" title="Unit system (u)"><option value="natural">Natural units (GeV)</option><option value="SI">SI units (K, s, m)</option><option value="planck">Planck units</option></select>
+    <button class="btn" id="btn-chalk" title="Blackboard theme (b)">Blackboard</button>
+    <button class="btn primary" id="btn-nb" title="Lab notebook & console (n, /)">Lab notebook</button>
+    <button class="btn" id="btn-pin" title="Remember the current universe and show every number relative to it">Pin as baseline</button>
+    <button class="btn" id="btn-reset" title="Back to the standard ΛCDM universe">Reset to ΛCDM</button>
+    <button class="btn" id="btn-share" title="Copy a link that reproduces this universe">Copy link</button>
+    <button class="btn" id="btn-export" title="Download parameters and results as JSON">Export</button>
+  </div>
+</header>
+<div id="readout" class="readout"></div>
+
+<main>
+<div class="banner" id="banner"><div id="banner-txt"></div><button class="btn tiny" id="banner-x">Dismiss</button></div>
+
+<!-- ============================================================ TIMELINE -->
+<section data-tab="seq" class="on">
+  <div class="hero">
+    <div class="hero-board">
+      <div class="hero-eq" data-tex="G_{\mu\nu} + \Lambda g_{\mu\nu} = \frac{8\pi G}{c^{4}}\,T_{\mu\nu}"></div>
+      <div class="hero-sub" id="hero-live"></div>
+      <div class="chalk-note">matter tells spacetime how to curve · spacetime tells matter how to move</div>
+    </div>
+    <div class="hero-side">
+      <h2 class="hand">What if the universe had happened differently?</h2>
+      <p>Every number in this laboratory is the solution of an equation — Friedmann, Boltzmann, Saha, a nuclear network, the growth equation — never a canned animation. Change a cause, predict the consequence, then let the equations judge you.</p>
+      <div class="hero-btns">
+        <button class="btn primary" data-go="whatif">Try a Gedankenexperiment</button>
+        <button class="btn" id="hero-nb">Open the lab notebook</button>
+        <button class="btn" data-go="spacetime">See spacetime bend</button>
+      </div>
+      <p class="muted" style="font-size:11.5px;margin-top:10px">Shortcuts: <kbd>/</kbd> console · <kbd>n</kbd> notebook · <kbd>1</kbd>–<kbd>0</kbd> tabs · <kbd>b</kbd> blackboard · <kbd>u</kbd> units</p>
+    </div>
+  </div>
+  <div class="intro">Cosmic history is a chain of <b>causes</b> (when the plasma was reheated, when matter was made, when the electroweak and QCD transitions happened, when dark matter froze out) and <b>consequences</b> (light elements, the CMB, galaxies, the fate of the universe). <b>Drag the round markers</b> to make things happen earlier or later: every consequence is recomputed from the equations. Click or drag anywhere else on the timeline to look inside the plasma at that moment.</div>
+  <div class="panel">
+    <div class="ph"><h3>The history of the universe, from the Planck time to today</h3>
+      <div class="tools"><button class="btn tiny primary" id="btn-play">▶ Play the Big Bang</button></div></div>
+    <div class="seqwrap"><canvas id="seq"></canvas><div class="plot-tip" id="seq-tip"></div></div>
+    <div class="seqbar muted" style="font-size:12px">● draggable cause &nbsp;·&nbsp; ◆ computed consequence &nbsp;·&nbsp; ticks = the temperature where each particle becomes non-relativistic and annihilates &nbsp;·&nbsp; strip = energy budget (radiation / matter / dark energy)</div>
+  </div>
+  <div class="inspector" style="margin-top:16px">
+    <div class="panel">
+      <div class="ph"><h3>Inside the plasma</h3><span class="muted" style="font-size:11px">illustrative particle counts · rare species exaggerated</span></div>
+      <p class="now" id="insp-now"></p>
+      <div class="grid2">
+        <canvas id="soup"></canvas>
+        <dl class="kv" id="insp-kv"></dl>
+      </div>
+      <div class="happen" id="insp-happen"></div>
+      <h3 style="margin-top:10px">Number density relative to photons, n/n<sub>γ</sub></h3>
+      <div class="bars" id="insp-bars"></div>
+    </div>
+    <div class="stack">
+      <div class="panel"><div class="ph"><h3>Consequences of this history</h3><span class="muted" style="font-size:11px" id="seq-cmp">Δ vs standard ΛCDM</span></div><div class="stats" id="seq-stats"></div></div>
+      <div class="panel"><h3>Physics notes</h3><ul class="notes" id="seq-notes"></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ SPACETIME -->
+<section data-tab="spacetime">
+  <div class="intro">In general relativity the Big Bang is not an explosion <i>in</i> space — it is the evolution <i>of</i> spacetime itself. <b>Matter and energy tell spacetime how to curve</b> (Einstein’s equation: every density <i>and pressure</i> gravitates), and <b>spacetime tells matter and light how to move</b> (distances stretch, light is redshifted, free particles slow down, horizons appear). Everything on this page is computed from this universe’s own expansion history — change dark energy, curvature or anything upstream and the fabric responds.</div>
+  <div class="lab">
+    <div class="panel ctrlpanel">
+      <h3>The moment</h3>
+      <div class="ctl"><div class="row1"><label>Cosmic time</label><span class="mono" id="st-t-lab"></span></div><input type="range" id="st-t" min="0" max="1000" value="500"></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn tiny primary" id="st-play">▶ Run cosmic history</button><button class="btn tiny" id="st-now">Today</button></div>
+      <h3>Fabric view</h3>
+      <label class="chk"><input type="checkbox" id="st-zg" checked><span>Zero-gravity radius around each mass <div class="help">where dark energy’s push equals the mass’s pull</div></span></label>
+      <label class="chk"><input type="checkbox" id="st-light" checked><span>A light wave crossing space <div class="help">its wavelength stretches with the scale factor</div></span></label>
+      <label class="chk"><input type="checkbox" id="st-curv" checked><span>Global curvature of space (exaggerated)</span></label>
+      <div class="ctl"><div class="row1"><label>Mass dropped by a click</label></div><select id="st-mass"><option value="1e13">Galaxy group — 10¹³ M☉</option><option value="1e14" selected>Galaxy cluster — 10¹⁴ M☉</option><option value="1e15">Rich cluster — 10¹⁵ M☉</option><option value="1e16">Supercluster core — 10¹⁶ M☉</option></select></div>
+      <button class="btn tiny" id="st-clear">Clear masses</button> <button class="btn tiny" id="st-default">Default masses</button>
+      <h3>Geometry &amp; dark energy</h3>
+      <div class="ctrls" data-c="closure,H0,omega_L,w0,wa"></div>
+    </div>
+    <div class="stack">
+      <div class="panel">
+        <div class="ph"><h3>The fabric of spacetime</h3><span class="muted" style="font-size:11px">drag to rotate · click the sheet to drop a mass</span></div>
+        <canvas id="fabric"></canvas>
+        <p class="muted" id="fabric-cap" style="font-size:11.5px;margin-bottom:0"></p>
+      </div>
+      <div class="panel"><div class="stats" id="s-st"></div></div>
+      <div class="grid2">
+        <div class="panel"><h3>Matter → spacetime: Einstein’s equation right now</h3><div id="ledger"></div></div>
+        <div class="panel"><h3>Spacetime → matter and light</h3><ul class="notes" id="st-back"></ul></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><h3>Light cones and horizons</h3><div class="tools"><label class="chk" style="padding:0"><input type="checkbox" id="st-comoving"> comoving coordinates</label><button class="btn tiny" data-csv="c-cone">CSV</button></div></div>
+        <div class="chart tall" id="c-cone"></div>
+        <p class="muted" style="font-size:12px" id="cone-cap"></p>
+      </div>
+      <div class="grid2">
+        <div class="panel"><div class="ph"><h3>How curved is spacetime? From the Big Bang to today</h3><div class="tools"><button class="btn tiny" data-csv="c-curv">CSV</button></div></div><div class="chart" id="c-curv"></div>
+          <p class="muted" style="font-size:12px">Curvature radius ℓ = K<sup>−¼</sup> from the Kretschmann invariant. Where ℓ approaches the Planck length, general relativity (and this model) stops being valid: the classical Big Bang singularity is where quantum gravity takes over.</p></div>
+        <div class="panel"><div class="ph"><h3>Pressure gravitates: equation of state and deceleration</h3><div class="tools"><button class="btn tiny" data-csv="c-trace">CSV</button></div></div><div class="chart" id="c-trace"></div>
+          <p class="muted" style="font-size:12px">ä/a = −(4πG/3)(ρ + 3p/c²): radiation (w = ⅓) decelerates twice as hard as dust (w = 0); anything with w &lt; −⅓ makes gravity repulsive. Each dip in w is a particle species turning non-relativistic and annihilating.</p></div>
+      </div>
+      <div class="grid2">
+        <div class="panel"><div class="ph"><h3>Gravity vs expansion: what stays bound?</h3><div class="tools"><button class="btn tiny" data-csv="c-bound">CSV</button></div></div><div class="chart" id="c-bound"></div><div id="bound-tab"></div></div>
+        <div class="panel"><div class="ph"><h3>Primordial gravitational waves — ripples of the Big Bang</h3><div class="tools"><button class="btn tiny" data-csv="c-gw">CSV</button></div></div><div class="chart" id="c-gw"></div><div class="stats" id="s-gw" style="margin-top:8px"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ THERMAL -->
+<section data-tab="thermal">
+  <div class="intro">The expansion rate at temperature T is set by how many particle species are relativistic, <b>g<sub>*</sub>(T)</b>. Each species contributes until T drops below its mass, when particles and antiparticles annihilate and dump their entropy into what remains. Change particle masses, remove species or add new ones and watch the clock of the early universe re-tick.</div>
+  <div class="lab">
+    <div class="panel ctrlpanel">
+      <h3>Transitions</h3><div class="ctrls" data-c="T_qcd,T_dnu"></div>
+      <h3>Light species</h3><div class="ctrls" data-c="Neff,dN_inj,T_inj"></div>
+      <h3>Particle masses <span class="muted" style="font-weight:400;font-size:11px">(× measured)</span></h3>
+      <table class="species" id="species-table"></table>
+    </div>
+    <div class="stack">
+      <div class="panel"><div class="ph"><h3>Effective degrees of freedom</h3><div class="tools"><button class="btn tiny" data-csv="c-g">CSV</button></div></div><div class="chart" id="c-g"></div></div>
+      <div class="grid2">
+        <div class="panel"><div class="ph"><h3>Clock: time vs temperature</h3><div class="tools"><button class="btn tiny" data-csv="c-tT">CSV</button></div></div><div class="chart" id="c-tT"></div></div>
+        <div class="panel"><div class="ph"><h3>Energy budget through cosmic time</h3><div class="tools"><button class="btn tiny" data-csv="c-budget">CSV</button></div></div><div class="chart" id="c-budget"></div></div>
+      </div>
+      <div class="panel"><div class="stats" id="s-thermal"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ INFLATION -->
+<section data-tab="inflation">
+  <div class="intro">Inflation stretched quantum fluctuations into the seeds of every galaxy. A slow-roll model predicts the tilt <b>n<sub>s</sub></b> and tensor ratio <b>r</b> of those seeds; the energy scale of inflation limits how hot the universe could be reheated, and <b>T<sub>rh</sub></b> in turn decides which heavy particles (baryogenesis, dark matter) could ever be created thermally.</div>
+  <div class="lab">
+    <div class="panel ctrlpanel">
+      <div class="ctrls" data-c="inf_model,Ne,ns_custom,r_custom,As,T_rh,link_inf"></div>
+    </div>
+    <div class="stack">
+      <div class="panel"><div class="stats" id="s-inf"></div></div>
+      <div class="panel"><div class="ph"><h3>Model predictions vs Planck + BICEP/Keck</h3><div class="tools"><button class="btn tiny" data-csv="c-nsr">CSV</button></div></div><div class="chart tall" id="c-nsr"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ BARYOGENESIS -->
+<section data-tab="bary">
+  <div class="intro">Why is there matter at all? A heavy particle X decays <b>out of equilibrium</b> and <b>violates CP</b>, producing a tiny asymmetry. <b>Sphalerons</b> — active only above the electroweak scale — convert lepton number into baryon number, but also erase any B+L. So <b>when</b> the asymmetry is made relative to T<sub>sph</sub> and T<sub>rh</sub> decides whether it survives. The integrated Boltzmann equations give η = n<sub>B</sub>/n<sub>γ</sub>, which then feeds nucleosynthesis, the CMB and galaxies.</div>
+  <div class="lab">
+    <div class="panel ctrlpanel">
+      <div class="ctrls" data-c="bg_mode,M_X,K,eps,T_sph,T_rh,bg_init"></div>
+      <h3>Linking</h3><div class="ctrls" data-c="link_eta,omega_b"></div>
+    </div>
+    <div class="stack">
+      <div class="panel"><div class="stats" id="s-bary"></div></div>
+      <div class="grid2">
+        <div class="panel"><h3>Sakharov conditions</h3><ul class="notes" id="sakharov"></ul></div>
+        <div class="panel"><h3>The great annihilation</h3><div id="annih"></div></div>
+      </div>
+      <div class="panel"><div class="ph"><h3>Boltzmann evolution (z = M<sub>X</sub>/T)</h3><div class="tools"><button class="btn tiny" data-csv="c-bg">CSV</button></div></div><div class="chart tall" id="c-bg"></div></div>
+      <div class="panel"><div class="ph"><h3>Scan: final η vs the mass (and so the epoch) of the decaying particle</h3><div class="tools"><button class="btn tiny" data-csv="c-bgscan">CSV</button></div></div><div class="chart" id="c-bgscan"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ DARK MATTER -->
+<section data-tab="dm">
+  <div class="intro">A stable particle χ in thermal equilibrium annihilates until the expansion rate beats its annihilation rate — it <b>freezes out</b> at x = m/T ≈ 20–25, leaving a relic density Ωh² ∝ 1/⟨σv⟩. A weak-scale cross-section gives the observed 0.12 (the “WIMP miracle”). If the universe was never hotter than ~m/20, the particle is never in equilibrium at all. Its mass also decides whether it is cold (small galaxies form) or warm (they do not).</div>
+  <div class="lab">
+    <div class="panel ctrlpanel">
+      <div class="ctrls" data-c="m_dm,sv,sv_b,g_dm,T_rh"></div>
+      <h3>Linking</h3><div class="ctrls" data-c="link_dm,omega_c"></div>
+      <h3>Free streaming</h3><div class="ctrls" data-c="m_wdm"></div>
+    </div>
+    <div class="stack">
+      <div class="panel"><div class="stats" id="s-dm"></div></div>
+      <div class="panel"><div class="ph"><h3>Comoving abundance Y = n/s through freeze-out</h3><div class="tools"><button class="btn tiny" data-csv="c-dm">CSV</button></div></div><div class="chart tall" id="c-dm"></div></div>
+      <div class="panel"><div class="ph"><h3>Relic density vs annihilation cross-section</h3><div class="tools"><button class="btn tiny" data-csv="c-dmscan">CSV</button></div></div><div class="chart" id="c-dmscan"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ BBN -->
+<section data-tab="bbn">
+  <div class="intro">In the first minutes, neutrons and protons fuse into D, ³He, ⁴He and ⁷Li. The outcome depends on the <b>baryon density η</b> (from baryogenesis), the <b>expansion rate</b> (N<sub>eff</sub>, G), the <b>neutron lifetime</b> and <b>n–p mass difference</b>, and the <b>deuteron binding energy</b> (the “deuterium bottleneck”). This is a full 8-nuclide, 11-reaction network with exact weak rates.</div>
+  <div class="lab">
+    <div class="panel ctrlpanel">
+      <h3>Baryons</h3><div class="ctrls" data-c="link_eta,omega_b"></div>
+      <h3>Expansion rate</h3><div class="ctrls" data-c="Neff,G_s,dN_inj,T_inj"></div>
+      <h3>Nuclear &amp; weak physics</h3><div class="ctrls" data-c="tau_n,Q_s,BD_s,me_s"></div>
+      <div class="ctrls" data-c="link_yp"></div>
+    </div>
+    <div class="stack">
+      <div class="panel"><div class="stats" id="s-bbn"></div></div>
+      <div class="panel"><div class="ph"><h3>Mass fractions during nucleosynthesis</h3><div class="tools"><label class="chk" style="padding:0"><input type="checkbox" id="bbn-vs-t"> vs time</label><button class="btn tiny" data-csv="c-bbn">CSV</button></div></div><div class="chart tall" id="c-bbn"></div></div>
+      <div class="panel"><div class="ph"><h3>Abundances vs baryon-to-photon ratio (Schramm plot)</h3><div class="tools"><span class="muted" id="schramm-status" style="font-size:11px"></span></div></div>
+        <div class="grid2"><div class="chart short" id="c-schramm-y"></div><div class="chart short" id="c-schramm"></div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ CMB -->
+<section data-tab="cmb">
+  <div class="intro">When the plasma cools to ~3000 K, electrons and nuclei form atoms and light streams free: the <b>cosmic microwave background</b>. The atomic physics (binding energy ∝ α²m<sub>e</sub>), the helium fraction from BBN and the expansion history all move the <b>last-scattering surface</b> and the acoustic scale that sets the CMB peaks.</div>
+  <div class="lab">
+    <div class="panel ctrlpanel">
+      <h3>Atomic physics</h3><div class="ctrls" data-c="alpha_s,me_s"></div>
+      <h3>Inventory</h3><div class="ctrls" data-c="T0,omega_b,omega_c,Neff,z_re"></div>
+    </div>
+    <div class="stack">
+      <div class="panel"><div class="stats" id="s-cmb"></div></div>
+      <div class="grid2">
+        <div class="panel"><div class="ph"><h3>Free-electron fraction x<sub>e</sub>(z)</h3><div class="tools"><button class="btn tiny" data-csv="c-xe">CSV</button></div></div><div class="chart" id="c-xe"></div></div>
+        <div class="panel"><div class="ph"><h3>Visibility function — where CMB photons last scattered</h3><div class="tools"><button class="btn tiny" data-csv="c-vis">CSV</button></div></div><div class="chart" id="c-vis"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ STRUCTURE -->
+<section data-tab="lss">
+  <div class="intro">Dark matter starts clumping at matter–radiation equality; baryons fall in after recombination. The primordial amplitude from inflation, the amount and temperature of dark matter, and dark energy (which halts growth) set how many halos of each mass exist — and so the <b>masses of galaxies</b>, when the first stars shine, and the largest clusters.</div>
+  <div class="lab">
+    <div class="panel ctrlpanel">
+      <h3>Primordial seeds</h3><div class="ctrls" data-c="As,ns"></div>
+      <h3>Matter</h3><div class="ctrls" data-c="omega_c,omega_b,m_wdm,mnu"></div>
+      <h3>Cosmic web (Zel'dovich)</h3>
+      <div class="ctl"><div class="row1"><label>Box size</label></div><select id="web-box"><option value="500">500 Mpc — the cosmic web</option><option value="120" selected>120 Mpc — filaments &amp; clusters</option><option value="20">20 Mpc — galaxy halos (warm-DM scale)</option></select></div>
+      <div class="ctl"><div class="row1"><label>Epoch</label><span class="mono" id="web-z-lab"></span></div><input type="range" id="web-a" min="0" max="1000" value="769"></div>
+      <button class="btn tiny" id="web-play">▶ Grow structure</button>
+    </div>
+    <div class="stack">
+      <div class="panel"><div class="stats" id="s-lss"></div></div>
+      <div class="grid2">
+        <div class="panel"><h3>Cosmic web slice</h3><canvas class="web" id="web"></canvas><p class="muted" style="font-size:11.5px;margin-bottom:0">Zel'dovich approximation on a 256² grid with this universe’s linear power spectrum and growth factor; same random seed for every universe, so differences are purely physical.</p></div>
+        <div class="stack">
+          <div class="panel"><div class="ph"><h3>Halo mass function (Sheth–Tormen)</h3><div class="tools"><button class="btn tiny" data-csv="c-hmf">CSV</button></div></div><div class="chart" id="c-hmf"></div></div>
+          <div class="panel"><div class="ph"><h3>Galaxy stellar mass vs halo mass</h3><div class="tools"><button class="btn tiny" data-csv="c-smhm">CSV</button></div></div><div class="chart short" id="c-smhm"></div></div>
+        </div>
+      </div>
+      <div class="panel"><div class="ph"><h3>Linear matter power spectrum today</h3><div class="tools"><button class="btn tiny" data-csv="c-pk">CSV</button></div></div><div class="chart" id="c-pk"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ DARK ENERGY -->
+<section data-tab="de">
+  <div class="intro">Dark energy with equation of state w(a) = w<sub>0</sub> + w<sub>a</sub>(1−a) dominates today and decides the <b>fate</b>: eternal expansion (w = −1), a <b>Big Rip</b> (w &lt; −1) or a <b>Big Crunch</b> (negative Λ or closed geometry). The acceleration equation is integrated forward, so the fate is computed, not assumed. By default the universe is kept flat and H<sub>0</sub> follows from the densities.</div>
+  <div class="lab">
+    <div class="panel ctrlpanel">
+      <div class="ctrls" data-c="omega_L,w0,wa,closure,H0,mnu"></div>
+    </div>
+    <div class="stack">
+      <div class="panel"><div class="stats" id="s-de"></div></div>
+      <div class="panel"><div class="ph"><h3>Scale factor: past and future</h3><div class="tools"><button class="btn tiny" data-csv="c-at">CSV</button></div></div><div class="chart tall" id="c-at"></div></div>
+      <div class="grid2">
+        <div class="panel"><div class="ph"><h3>Energy densities vs scale factor</h3><div class="tools"><button class="btn tiny" data-csv="c-rho">CSV</button></div></div><div class="chart" id="c-rho"></div></div>
+        <div class="panel"><div class="ph"><h3>Deceleration parameter q(z)</h3><div class="tools"><button class="btn tiny" data-csv="c-q">CSV</button></div></div><div class="chart" id="c-q"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ NEUTRINOS -->
+<section data-tab="nu">
+  <div class="intro">Three light neutrinos decoupled one second after the Big Bang and still fill the universe: a <b>cosmic neutrino background</b> at 1.95 K, ~336 per cm³. Their masses (fixed by oscillation splittings plus the unknown lightest mass) turn them from radiation into hot dark matter that <b>smooths structure</b>; their number <b>N<sub>eff</sub></b> is measured twice, by BBN at 1 s and by the CMB at 380 000 yr. A <b>sterile</b> neutrino could even be the dark matter.</div>
+  <div class="lab">
+    <div class="panel ctrlpanel">
+      <h3>Masses</h3>
+      <div class="ctl"><div class="row1"><label>Mass ordering</label></div><select id="nu-hier"><option value="normal">Normal (m₁ &lt; m₂ &lt; m₃)</option><option value="inverted">Inverted (m₃ &lt; m₁ &lt; m₂)</option><option value="degenerate">Just set Σm<sub>ν</sub> (degenerate)</option></select></div>
+      <div class="ctl"><div class="row1"><label>Lightest neutrino mass</label><input type="text" id="nu-ml-num" spellcheck="false"></div><input type="range" id="nu-ml" min="0" max="1000"><div class="help">Oscillations fix the splittings Δm²₂₁ = 7.42×10⁻⁵ eV², |Δm²₃₁| = 2.5×10⁻³ eV².</div></div>
+      <div class="ctrls" data-c="mnu,Neff"></div>
+      <h3>Sterile neutrino dark matter</h3>
+      <div class="ctl"><div class="row1"><label>Mass m<sub>s</sub> [keV]</label><input type="text" id="st-ms-num" spellcheck="false"></div><input type="range" id="st-ms" min="0" max="1000"></div>
+      <div class="ctl"><div class="row1"><label>Mixing sin²2θ</label><input type="text" id="st-s2-num" spellcheck="false"></div><input type="range" id="st-s2" min="0" max="1000"></div>
+      <button class="btn tiny" id="st-use">Make it the dark matter</button>
+    </div>
+    <div class="stack">
+      <div class="panel"><div class="stats" id="s-nu"></div></div>
+      <div class="grid2">
+        <div class="panel"><div class="ph"><h3>Neutrino masses and the ordering</h3></div><div class="chart short" id="c-numass"></div></div>
+        <div class="panel"><div class="ph"><h3>Hot dark matter erases small-scale power</h3><div class="tools"><button class="btn tiny" data-csv="c-nupk">CSV</button></div></div><div class="chart short" id="c-nupk"></div></div>
+      </div>
+      <div class="panel"><div class="ph"><h3>N<sub>eff</sub> seen twice: nucleosynthesis vs the CMB</h3><span class="muted" id="nu-scan-status" style="font-size:11px"></span></div><div class="grid2"><div class="chart short" id="c-neffY"></div><div class="chart short" id="c-neffT"></div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ RELICS -->
+<section data-tab="relics">
+  <div class="intro">Symmetry breaking in the early universe can leave <b>relics</b>. A <b>first-order phase transition</b> nucleates bubbles whose collisions and sound waves emit gravitational waves; <b>topological defects</b> (monopoles, strings, domain walls) form wherever the new vacuum is chosen differently in causally disconnected regions (Kibble); and rare large fluctuations collapse into <b>primordial black holes</b>. Each is a window on physics far beyond any collider.</div>
+  <div class="grid2">
+    <div class="panel">
+      <h3>First-order phase transition → gravitational waves</h3>
+      <div class="grid2"><div id="pt-ctrls"></div><div class="stats" id="s-pt"></div></div>
+      <div class="chart" id="c-pt"></div>
+      <p class="muted" style="font-size:12px">Sound-wave + turbulence spectra (Caprini et al. 2016/2020) with the finite sound-wave lifetime. In the Standard Model (m<sub>H</sub> = 125 GeV) the electroweak transition is a smooth crossover: α ≈ 0, no signal — any detection would mean new physics.</p>
+    </div>
+    <div class="panel">
+      <h3>Topological defects — the Kibble mechanism</h3>
+      <div id="df-ctrls"></div>
+      <ul class="notes" id="df-notes" style="margin-top:8px"></ul>
+    </div>
+  </div>
+  <div class="panel" style="margin-top:16px">
+    <h3>Primordial black holes</h3>
+    <div class="grid2"><div><div id="pbh-ctrls"></div><div class="stats" id="s-pbh" style="margin-top:8px"></div></div><div class="chart" id="c-pbh"></div></div>
+  </div>
+</section>
+
+<!-- ============================================================ DATA -->
+<section data-tab="data">
+  <div class="intro">Turn the laboratory into an instrument: confront any universe with <b>real measurements</b> and let an optimiser find the best-fit parameters with error bars. The code is calibrated so that its standard ΛCDM reproduces the reference predictions exactly; fits then use only <i>differences</i>, which this code gets right far more precisely than absolute numbers.</div>
+  <div class="lab">
+    <div class="panel ctrlpanel">
+      <h3>Data sets</h3><div id="fit-data"></div>
+      <h3>Free parameters</h3><div id="fit-free"></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px"><button class="btn primary" id="fit-go">Fit the universe</button><button class="btn" id="fit-stop" disabled>Stop</button></div>
+      <p class="muted" id="fit-status" style="font-size:12px"></p>
+    </div>
+    <div class="stack">
+      <div class="panel"><h3>Best fit</h3><div id="fit-out"><p class="muted">Choose data and free parameters, then press “Fit the universe”. Each χ² evaluation runs the entire pipeline — baryogenesis to structure — so a fit takes 10–40 s.</p></div></div>
+      <div class="panel"><div class="ph"><h3>Convergence</h3></div><div class="chart short" id="c-fitconv"></div></div>
+      <div class="panel">
+        <div class="ph"><h3>The Hubble tension</h3><div class="tools"><button class="btn tiny primary" id="ht-go">Run the tension study</button></div></div>
+        <p class="muted" style="font-size:12.5px">Early-universe data (CMB + BBN) predict H₀ ≈ 67–68 km/s/Mpc; Cepheid-calibrated supernovae measure 73.0 ± 1.0. The study fits early data together with SH0ES in ΛCDM and in three extensions that change the physics before recombination — extra radiation, a heavier electron, both — and reports how far each moves H₀.</p>
+        <div id="ht-out"></div><div class="chart short" id="c-ht"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ RESEARCH -->
+<section data-tab="research">
+  <div class="intro">Tools for working with many universes at once: store universes side by side, measure how every prediction responds to every input, map the space of possible universes, and take your results elsewhere (Python, CAMB/CLASS, a printable report).</div>
+  <div class="panel">
+    <div class="ph"><h3>Side-by-side universes</h3><div class="tools" id="slot-btns"></div></div>
+    <div class="grid2"><div id="cmp-table"></div><div><div class="ctl" style="border:0;padding-top:0"><div class="row1"><label>Overlay</label></div><select id="cmp-what"><option value="cmb">CMB power spectrum</option><option value="xe">Ionisation history x<sub>e</sub>(z)</option><option value="at">Scale factor a(t)</option><option value="pk">Matter power spectrum</option><option value="hmf">Halo mass function (z = 0)</option><option value="bbn">Light-element abundances</option></select></div><div class="chart" id="c-cmp"></div></div></div>
+  </div>
+  <div class="grid2" style="margin-top:16px">
+    <div class="panel"><div class="ph"><h3>Sensitivity matrix ∂ln(output)/∂ln(input)</h3><div class="tools"><button class="btn tiny primary" id="sens-go">Compute</button></div></div><div id="sens-out"><p class="muted" style="font-size:12.5px">Each input is nudged by ±1% (w₀, wₐ by ±0.01) around the current universe; entries are logarithmic derivatives (for w: ∂ln O/∂w). Red: grows, blue: shrinks.</p></div></div>
+    <div class="panel"><div class="ph"><h3>Fine-tuning map</h3><div class="tools"><button class="btn tiny primary" id="ft-go">Map it</button></div></div><div id="ft-ctrls"></div><canvas id="ft-canvas" class="web" style="aspect-ratio:1.25"></canvas><p class="muted" id="ft-cap" style="font-size:12px"></p></div>
+  </div>
+  <div class="panel" style="margin-top:16px">
+    <h3>Take it elsewhere</h3>
+    <div class="hero-btns"><button class="btn" id="ex-ipynb">Jupyter notebook (.ipynb)</button><button class="btn" id="ex-camb">CAMB / CLASS inputs</button><button class="btn" id="ex-report">Printable report (PDF)</button><button class="btn" id="btn-export2">Raw JSON</button></div>
+    <p class="muted" style="font-size:12px;margin-bottom:0">The notebook embeds this universe’s parameters and computed curves with matplotlib code to re-plot them, plus a cell that reruns the same cosmology in CAMB for an independent cross-check.</p>
+  </div>
+</section>
+
+<!-- ============================================================ LEARN -->
+<section data-tab="learn">
+  <div class="intro">Guided lectures at the blackboard — each step changes the universe and takes you to where the physics shows, with optional narration — and challenges that ask you to <b>engineer</b> a universe with given properties.</div>
+  <div class="ph" style="margin-bottom:8px"><h2 class="hand">Lectures</h2><label class="chk" style="padding:0"><input type="checkbox" id="narrate"> Narrate aloud (speech synthesis)</label></div>
+  <div class="cards" id="lectures"></div>
+  <h2 class="hand" style="margin-top:22px">Challenges</h2>
+  <div class="cards" id="challenges"></div>
+</section>
+
+<!-- ============================================================ WHAT IF -->
+<section data-tab="whatif">
+  <div class="intro">Ready-made experiments. Each one changes a cause, then takes you to where the consequence shows. Everything stays editable, and <b>Pin as baseline</b> lets you compare any two universes side by side.</div>
+  <div class="cards" id="cards"></div>
+</section>
+
+<!-- ============================================================ METHODS -->
+<section data-tab="methods">
+  <div class="intro">What is solved, how accurately, and from which sources. The validation table is recomputed live in your browser from the same code that drives every chart.</div>
+  <div class="grid2">
+    <div class="panel"><h3>Validation: this code vs published results (standard ΛCDM)</h3><table class="t" id="val"></table></div>
+    <div class="panel" id="methods-text"></div>
+  </div>
+</section>
+</main>
+<div class="toast" id="toast"></div>
+<div class="prof" id="prof" hidden>
+  <div class="prof-head"><span class="hand" id="prof-title"></span><span class="mono muted" id="prof-step"></span><button class="btn tiny" id="prof-x">End ✕</button></div>
+  <div class="prof-body" id="prof-body"></div>
+  <div class="prof-foot"><button class="btn tiny" id="prof-prev">← Back</button><button class="btn tiny" id="prof-say" title="Read this step aloud">🔊</button><button class="btn tiny primary" id="prof-next">Next →</button></div>
+</div>
+<button class="ai-fab" id="ai-fab" title="Ask the physicist (AI)">Ask the physicist</button>
+<aside class="drawer ai" id="ai" aria-label="AI physicist">
+  <div class="nb-head"><h2 class="hand">Ask the physicist</h2><button class="btn tiny" id="ai-close">Close ✕</button></div>
+  <div class="ai-key" id="ai-keybox">
+    <p style="margin:0 0 6px;font-size:12.5px">Answers use Claude and <b>your own Anthropic API key</b>; the key goes only from this browser to api.anthropic.com. Without a key, an offline explainer answers from this universe’s numbers.</p>
+    <div style="display:flex;gap:6px"><input type="password" id="ai-key" placeholder="sk-ant-…" autocomplete="off" spellcheck="false"><button class="btn tiny" id="ai-savekey">Use key</button></div>
+    <label class="chk" style="padding:4px 0 0"><input type="checkbox" id="ai-remember"> remember on this device</label>
+  </div>
+  <div class="ai-log" id="ai-log"></div>
+  <div class="ai-quick" id="ai-quick"></div>
+  <div class="nb-in ai-in"><span>?</span><input id="ai-q" placeholder="Why did helium go up in this universe?" autocomplete="off"><button class="btn tiny primary" id="ai-send">Ask</button></div>
+</aside>
+<aside class="drawer" id="nb" aria-label="Lab notebook">
+  <div class="nb-head"><h2 class="hand">Lab notebook</h2><div class="nb-score" id="nb-score"></div><button class="btn tiny" id="nb-close">Close ✕</button></div>
+  <div class="nb-console">
+    <div class="nb-out" id="nb-out"></div>
+    <div class="nb-in"><span>›</span><input id="nb-cmd" spellcheck="false" autocomplete="off" placeholder="try:  me_s = 1.1   ·   ? zstar   ·   scan Neff 2 5 8 Yp   ·   help"></div>
+  </div>
+  <div class="nb-plot" id="nb-plot"></div>
+  <div class="nb-tools"><h3 class="hand" style="margin:0">Log of experiments</h3><div><button class="btn tiny" id="nb-md">Export Markdown</button> <button class="btn tiny" id="nb-tex">Export LaTeX</button> <button class="btn tiny" id="nb-clear">Clear</button></div></div>
+  <div class="nb-log" id="nb-log"></div>
+</aside>
+<script src="physics.js"></script>
+<script src="physics-ext.js"></script>
+<script src="plot.js"></script>
+<script src="app.js"></script>
+<script src="lab2.js"></script>
+</body>
+</html>
