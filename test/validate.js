@@ -79,6 +79,16 @@ check('Local Group zero-gravity radius [Mpc] (~1.5)', R.sp.systems[1].r0 / 3.085
   check('GUT monopoles without inflation: log Ωh² ≫ 0', Math.log10(GX.defects({ Tc: 1e16, mMono: 1e17, etaString: 1e16, etaWall: 1e5 }, GP.run({ T_rh: 1e17 })).monoOmega), 18, 3);
   check('PBH of 5.1e14 g evaporates today [Gyr]', GX.pbh(R, 5.1e14, 1e-9).tauGyr, R.tl.age, 0.01);
 }
+// expansion speed and early dark energy
+{
+  const fast = GP.run({ xi: 1.2 }), ede = GP.run({ f_ede: 0.1, z_ede: 3500 }), edeB = GP.run({ f_ede: 0.1, z_ede: 1e9 });
+  check('ξ = 1.2: faster expansion → more helium', fast.nuc.Yp - R.nuc.Yp > 0.02 ? 1 : 0, 1, 0);
+  check('ξ = 1.2: earlier WIMP freeze-out → more DM', fast.omega_c / R.omega_c, 1.19, 0.05);
+  check('ξ = 1.2: weaker growth → lower σ₈', fast.st.sigma8 < 0.5 ? 1 : 0, 1, 0);
+  check('EDE before recombination shrinks θ* (Δ100θ*)', ede.rec.theta100 - R.rec.theta100, -0.02, 0.01);
+  check('EDE during BBN raises Y_p', edeB.nuc.Yp - R.nuc.Yp, 0.0035, 0.002);
+  check('EDE off reproduces ΛCDM exactly (H0)', GP.run({ f_ede: 0, xi: 1 }).cp.H0, R.cp.H0, 1e-9);
+}
 // fate
 check('q0 (-0.53)', R.ft.q0, -0.53, 0.03);
 check('z_acc (~0.63)', R.ft.zacc, 0.63, 0.05);

@@ -46,6 +46,8 @@ const DEFAULTS = {
   dm_mode: 'wimp', fi_m: 1e-4, fi_mB: 1000, fi_lambda: 3.9e-9, ax_fa: 2.29e11, ax_theta: 1, adm_m: 5.05, adm_ratio: 1,
   // nuclear-rate multipliers keyed by reaction index, stellar lithium depletion factor
   bbn_mul: {}, li_depl: 1, nu_masses: [],
+  // expansion-speed factor ξ (H → ξH at all times) and early dark energy (fraction f at redshift z_c)
+  xi: 1, f_ede: 0, z_ede: 3500,
   // links: earlier epochs feed later ones
   link_eta: true, link_dm: true, link_yp: true, link_inf: true,
 };
@@ -176,8 +178,11 @@ function makeThermo(P) {
     const f = Math.min(NT - 1.000001, Math.max(0, (Math.log(T) - L0) / dL)), i = Math.floor(f), w = f - i;
     return { gr: GR[i] + w * (GR[i + 1] - GR[i]), gs: GS[i] + w * (GS[i + 1] - GS[i]), r: RN[i] + w * (RN[i + 1] - RN[i]), gp: GPp[i] + w * (GPp[i + 1] - GPp[i]) };
   }
-  // radiation-era Hubble rate (GeV) — used by the freeze-out problems
-  function Hrad(T) { return Math.sqrt(8 * PI / 3 * PI * PI / 30 * g(T).gr) * T * T / U.Mpl; }
+  const ede = makeEDE(P, g), xi = P.xi || 1;
+  // Hubble rate in the radiation era (GeV), with early dark energy and the expansion-speed factor ξ —
+  // used by the freeze-out problems. HradStd is plain general relativity with radiation only.
+  function HradStd(T) { return Math.sqrt(8 * PI / 3 * PI * PI / 30 * g(T).gr) * T * T / U.Mpl; }
+  function Hrad(T) { return xi * Math.sqrt(8 * PI / 3 * (PI * PI / 30 * g(T).gr * T ** 4 + ede.rhoT(T))) / U.Mpl; }
   // relative number densities of each species at temperature T (for the plasma inspector)
   function composition(T) {
     const S = qcdS(T);
@@ -193,7 +198,21 @@ function makeThermo(P) {
       n: 2 * P.Neff * 0.75 * ZETA3 / (PI * PI) * (r * T) ** 3 });
     return rows;
   }
-  return { g, Hrad, plasma, composition, species: sp };
+  return { g, Hrad, HradStd, plasma, composition, species: sp, ede, xi };
+}
+/* Early dark energy: a field frozen by Hubble friction (w = −1) until z_c, after which it oscillates and
+ * dilutes like a⁻⁶ (w → +1) — the fluid form used for "EDE" Hubble-tension models (Poulin+ 2019):
+ *   ρ_EDE(a) = 2 ρ_c / (1 + (a/a_c)⁶),  with ρ_c set so it is a fraction f of all energy at a_c.
+ * Placing z_c early (≫ 10⁹) makes it act during nucleosynthesis or even the freeze-outs. */
+function makeEDE(P, g) {
+  const f = Math.min(Math.max(P.f_ede || 0, 0), 0.95);
+  if (!(f > 0)) return { on: false, f: 0, rhoT: () => 0, rhoA: () => 0, w: () => -1, Tc: 0, rhoc: 0 };
+  const T0 = P.T0 * U.kB, zc = P.z_ede, ac = 1 / (1 + zc), Tc = T0 * (1 + zc), g0s = g(T0).gs;
+  const rhoRest = PI * PI / 30 * g(Tc).gr * Tc ** 4 + U.rhoch2 * (P.omega_b + P.omega_c + P.mnu / 93.14) * (1 + zc) ** 3 + U.rhoch2 * Math.max(P.omega_L, 0);
+  const rhoc = f / (1 - f) * rhoRest;
+  const rhoA = a => 2 * rhoc / (1 + Math.pow(a / ac, 6));
+  const aOfT = T => Math.cbrt(g0s / g(T).gs) * T0 / T;
+  return { on: true, f, zc, ac, Tc, rhoc, rhoA, rhoT: T => rhoA(aOfT(T)), w: a => { const x6 = Math.pow(a / ac, 6); return -1 + 2 * x6 / (1 + x6); } };
 }
 
 /* ----------------------------------------------- background (Friedmann) */
@@ -203,41 +222,46 @@ function cosmology(P, th, omega_b, omega_c) {
   const omega_nu = P.mnu / 93.14;
   const omega_m = omega_b + omega_c + omega_nu;
   let h, Ok;
-  if (P.closure === 'fixedH') { h = P.H0 / 100; Ok = 1 - (omega_m + omega_r + P.omega_L) / (h * h); }
-  else { h = Math.sqrt(Math.max(omega_m + omega_r + P.omega_L, 1e-4)); Ok = 0; }
+  const ede = th.ede, omega_ede0 = ede.on ? ede.rhoA(1) / U.rhoch2 : 0, xi = P.xi || 1;
+  if (P.closure === 'fixedH') { h = P.H0 / 100 / xi; Ok = 1 - (omega_m + omega_r + P.omega_L + omega_ede0) / (h * h); }
+  else { h = Math.sqrt(Math.max(omega_m + omega_r + P.omega_L + omega_ede0, 1e-4)); Ok = 0; }
   // with a negative dark-energy density the flat universe may recollapse before it ever cools to T0
-  const invalid = P.closure !== 'fixedH' && omega_m + omega_r + P.omega_L <= 1e-4;
+  const invalid = P.closure !== 'fixedH' && omega_m + omega_r + P.omega_L + omega_ede0 <= 1e-4;
   const h2 = h * h;
   return {
-    h, H0: 100 * h, Om: omega_m / h2, Ob: omega_b / h2, Oc: omega_c / h2, Onu: omega_nu / h2, Or: omega_r / h2,
+    // h normalises the densities (ω = Ωh²); the measured expansion rate today is ξ·100h
+    xi, Oede: ede.on ? (a => ede.rhoA(a) / (U.rhoch2 * h2)) : null, edeW: ede.w, ede,
+    h, H0: 100 * h * xi, Om: omega_m / h2, Ob: omega_b / h2, Oc: omega_c / h2, Onu: omega_nu / h2, Or: omega_r / h2,
     OL: P.omega_L / h2, Ok, w0: P.w0, wa: P.wa, omega_b, omega_c, omega_m, omega_r, omega_nu, omega_L: P.omega_L,
     T0K: P.T0, T0, gs0: g0.gs, gr0: g0.gr, rhoc0: U.rhoch2 * h2,
     omega_g: 2.4729e-5 * (P.T0 / 2.7255) ** 4, invalid,
   };
 }
-function E2(cp, a) { return cp.Or / a ** 4 + cp.Om / a ** 3 + cp.Ok / (a * a) + cp.OL * deF(a, cp.w0, cp.wa); }
+function E2(cp, a) { return cp.Or / a ** 4 + cp.Om / a ** 3 + cp.Ok / (a * a) + cp.OL * deF(a, cp.w0, cp.wa) + (cp.Oede ? cp.Oede(a) : 0); }
 
 /* Full thermal timeline T = 1e19 GeV -> T0: a(T) from entropy conservation,
  * H from all components, t = integral d ln a / H. */
 function timeline(cp, th) {
   const N = 2600, L1 = Math.log(1.2e19), L0 = Math.log(cp.T0);
   const T = new Float64Array(N), a = new Float64Array(N), t = new Float64Array(N), H = new Float64Array(N),
-    gr = new Float64Array(N), gs = new Float64Array(N), fr = new Float64Array(N), fm = new Float64Array(N), fl = new Float64Array(N);
+    gr = new Float64Array(N), gs = new Float64Array(N), fr = new Float64Array(N), fm = new Float64Array(N), fl = new Float64Array(N), fe = new Float64Array(N);
+  const xi = cp.xi || 1;
   for (let i = 0; i < N; i++) {
     const Ti = Math.exp(L1 + (L0 - L1) * i / (N - 1)), g = th.g(Ti);
     const ai = Math.cbrt(cp.gs0 / g.gs) * cp.T0 / Ti;
     const rr = PI * PI / 30 * g.gr * Ti ** 4, rm = cp.rhoc0 * cp.Om / ai ** 3, rl = cp.rhoc0 * cp.OL * deF(ai, cp.w0, cp.wa), rk = cp.rhoc0 * cp.Ok / (ai * ai);
-    const rho = Math.max(rr + rm + rl + rk, 1e-300);
+    const re = th.ede.rhoA(ai);
+    const rho = Math.max(rr + rm + rl + rk + re, 1e-300);
     T[i] = Ti; a[i] = ai; gr[i] = g.gr; gs[i] = g.gs;
-    H[i] = Math.sqrt(8 * PI * rho / 3) / U.Mpl / U.hbar;
-    const tot = rr + rm + Math.abs(rl);
-    fr[i] = rr / tot; fm[i] = rm / tot; fl[i] = rl / tot;
+    H[i] = xi * Math.sqrt(8 * PI * rho / 3) / U.Mpl / U.hbar;
+    const tot = rr + rm + Math.abs(rl) + re;
+    fr[i] = rr / tot; fm[i] = rm / tot; fl[i] = rl / tot; fe[i] = re / tot;
     if (i === 0) t[i] = 1 / (2 * H[i]);
     else t[i] = t[i - 1] + 0.5 * (1 / H[i] + 1 / H[i - 1]) * Math.log(ai / a[i - 1]);
   }
   const lnT = Array.from(T, Math.log), lnt = Array.from(t, Math.log), lna = Array.from(a, Math.log);
   return {
-    T, a, t, H, gr, gs, fr, fm, fl, age: t[N - 1] / U.Gyr,
+    T, a, t, H, gr, gs, fr, fm, fl, fe, age: t[N - 1] / U.Gyr,
     tAtT: Tq => Math.exp(lerp(lnT, lnt, Math.log(Tq))),
     aAtT: Tq => Math.exp(lerp(lnT, lna, Math.log(Tq))),
     TAta: aq => Math.exp(lerp(lna, lnT, Math.log(aq))),
@@ -254,7 +278,8 @@ function timeline(cp, th) {
  * Sphalerons (active for T > T_sph) convert B-L into B with a_sph = 28/79 and
  * erase any B+L; what survives depends on WHEN the asymmetry is made. */
 function baryogenesis(P, th) {
-  const M = P.M_X, K = P.K, eps = P.eps, mode = P.bg_mode;
+  // K = Γ/H(M) is quoted for standard expansion; faster expansion (ξ, early dark energy) lowers it
+  const Mc = Math.min(P.M_X, 1e19), M = P.M_X, K = P.K * th.HradStd(Mc) / th.Hrad(Mc), eps = P.eps, mode = P.bg_mode;
   const z0 = Math.max(1e-2, M / P.T_rh), zEnd = Math.max(120, z0 + 120);
   const thermalStart = P.bg_init === 'thermal' && z0 <= 0.1;
   const Neq = z => 0.375 * z * z * K2s(z) * Math.exp(-z);
@@ -412,7 +437,8 @@ function bbn(o) {
     let rho = PI * PI / 15 * T ** 4 + PI * PI / 30 * 3.5 * Rx(me / T, true) * T ** 4 + PI * PI / 30 * 1.75 * o.Neff * Tnu ** 4;
     if (o.dNinj > 0 && T < o.TinjMeV) rho += PI * PI / 30 * 1.75 * o.dNinj * Tnu ** 4;
     rho += nb0 / a ** 3 * hc3 * 939;
-    return Math.sqrt(8 * PI * o.G_s * rho / 3) / MplMeV / hbarMeV;
+    if (o.edeRho > 0) rho += 2 * o.edeRho / (1 + Math.pow(o.edeTc / T, 6));     // early dark energy (MeV⁴), a/a_c ≈ T_c/T
+    return (o.xi || 1) * Math.sqrt(8 * PI * o.G_s * rho / 3) / MplMeV / hbarMeV;
   };
   const NSP = 8;
   let Y = new Float64Array(NSP); const Yold = new Float64Array(NSP);
@@ -492,7 +518,7 @@ function recombination(cp, o, tl) {
   const lamA = hP * c / Ea, L2s = 8.2245809 * sA ** 8 * sM, sigT = 6.6524587e-29 * sA * sA / (sM * sM);
   const Yp = Math.min(Math.max(o.Yp, 0), 0.99), fHe = Yp / (3.9715 * (1 - Yp));
   const nH0 = 11.2236 * (1 - Yp) * cp.omega_b, T0 = cp.T0K;
-  const Hz = z => cp.h * U.H100s * Math.sqrt(Math.max(E2(cp, 1 / (1 + z)), 1e-30));
+  const Hz = z => (cp.xi || 1) * cp.h * U.H100s * Math.sqrt(Math.max(E2(cp, 1 / (1 + z)), 1e-30));
   const alphaB = T => { const t = T / (1e4 * sB); return 1.14e-19 * sA * sA / (sM * sM) * 4.309 * Math.pow(t, -0.6166) / (1 + 0.6703 * Math.pow(t, 0.5300)); };
   const phase = T => Math.pow(2 * PI * me * kB * T / (hP * hP), 1.5);
   function saha(z) {
@@ -568,8 +594,8 @@ function recombination(cp, o, tl) {
   // sound horizon and angular scale of the acoustic peaks
   const astar = 1 / (1 + zstar), Rb = 0.75 * cp.omega_b / cp.omega_g;
   const Eof = a => Math.sqrt(Math.max(E2(cp, a), 1e-30));
-  let rs = 0; { const M = 4000, h = astar / M; for (let k = 0; k <= M; k++) { const a = Math.max(k * h, 1e-12), w = (k === 0 || k === M) ? 1 : (k % 2 ? 4 : 2); rs += w / (a * a * Eof(a) * Math.sqrt(3 * (1 + Rb * a))); } rs *= h / 3 * U.cH100 / cp.h; }
-  let chi = 0; { const M = 4000, l0 = Math.log(astar), h = -l0 / M; for (let k = 0; k <= M; k++) { const a = Math.exp(l0 + k * h), w = (k === 0 || k === M) ? 1 : (k % 2 ? 4 : 2); chi += w / (a * Eof(a)); } chi *= h / 3 * U.cH100 / cp.h; }
+  let rs = 0; { const M = 4000, h = astar / M; for (let k = 0; k <= M; k++) { const a = Math.max(k * h, 1e-12), w = (k === 0 || k === M) ? 1 : (k % 2 ? 4 : 2); rs += w / (a * a * Eof(a) * Math.sqrt(3 * (1 + Rb * a))); } rs *= h / 3 * U.cH100 / (cp.h * (cp.xi || 1)); }
+  let chi = 0; { const M = 4000, l0 = Math.log(astar), h = -l0 / M; for (let k = 0; k <= M; k++) { const a = Math.exp(l0 + k * h), w = (k === 0 || k === M) ? 1 : (k % 2 ? 4 : 2); chi += w / (a * Eof(a)); } chi *= h / 3 * U.cH100 / (cp.h * (cp.xi || 1)); }
   let DM = chi;
   if (Math.abs(cp.Ok) > 1e-8) { const dh = U.cH100 / cp.h, sk = Math.sqrt(Math.abs(cp.Ok)); DM = cp.Ok > 0 ? dh / sk * Math.sinh(sk * chi / dh) : dh / sk * Math.sin(sk * chi / dh); }
   const theta = rs / DM;
@@ -589,9 +615,11 @@ function recombination(cp, o, tl) {
  * halo mass function, Moster+ (2013) stellar-to-halo relation. */
 function growth(cp, aMax) {
   const Om = cp.Om, OL = cp.OL, Ok = cp.Ok, w0 = cp.w0, wa = cp.wa;
-  const e2 = a => Om / a ** 3 + Ok / (a * a) + OL * deF(a, w0, wa);
-  const dlnE = a => { const E2v = e2(a); return 0.5 * (-3 * Om / a ** 3 - 2 * Ok / (a * a) - 3 * (1 + wOf(a, w0, wa)) * OL * deF(a, w0, wa)) / E2v; };
-  const rhs = (a, D, Dp) => [Dp, -(2 + dlnE(a)) * Dp + 1.5 * Om / a ** 3 / e2(a) * D];
+  const Oe = cp.Oede || (() => 0), we = cp.edeW || (() => -1), xi2 = (cp.xi || 1) ** 2;
+  const e2 = a => Om / a ** 3 + Ok / (a * a) + OL * deF(a, w0, wa) + Oe(a);
+  const dlnE = a => { const E2v = e2(a); return 0.5 * (-3 * Om / a ** 3 - 2 * Ok / (a * a) - 3 * (1 + wOf(a, w0, wa)) * OL * deF(a, w0, wa) - 3 * (1 + we(a)) * Oe(a)) / E2v; };
+  // gravity's pull (4πGρ) relative to Hubble friction: an expansion sped up by ξ weakens it by 1/ξ²
+  const rhs = (a, D, Dp) => [Dp, -(2 + dlnE(a)) * Dp + 1.5 * Om / a ** 3 / e2(a) / xi2 * D];
   const la0 = Math.log(1e-3), la1 = Math.log(aMax), h = 0.004;
   const LA = [], DD = [], FF = [];
   let la = la0, D = 1e-3, Dp = 1e-3;
@@ -683,7 +711,8 @@ function structure(cp, o) {
  * recollapse (Big Crunch) and phantom Big Rip are captured, not assumed. */
 function fate(cp, age) {
   const tH = 977.792 / cp.H0;                               // 1/H0 in Gyr
-  const acc = a => -0.5 * a * (2 * cp.Or / a ** 4 + cp.Om / a ** 3 + cp.OL * deF(a, cp.w0, cp.wa) * (1 + 3 * wOf(a, cp.w0, cp.wa)));
+  const edeTerm = a => cp.Oede ? cp.Oede(a) * (1 + 3 * cp.edeW(a)) : 0;
+  const acc = a => -0.5 * a * (2 * cp.Or / a ** 4 + cp.Om / a ** 3 + cp.OL * deF(a, cp.w0, cp.wa) * (1 + 3 * wOf(a, cp.w0, cp.wa)) + edeTerm(a));
   let a = 1, v = Math.sqrt(Math.max(E2(cp, 1), 0)), t = 0;
   const ts = [age], as = [1];
   const tMax = 1000 / tH;                                  // look 1000 Gyr ahead
@@ -703,7 +732,7 @@ function fate(cp, age) {
   }
   ts.push(age + t * tH); as.push(a);
   // deceleration parameter today and the start of acceleration
-  const q = aa => { const e2 = E2(cp, aa); return 0.5 * (2 * cp.Or / aa ** 4 + cp.Om / aa ** 3 + cp.OL * deF(aa, cp.w0, cp.wa) * (1 + 3 * wOf(aa, cp.w0, cp.wa))) / e2; };
+  const q = aa => { const e2 = E2(cp, aa); return 0.5 * (2 * cp.Or / aa ** 4 + cp.Om / aa ** 3 + cp.OL * deF(aa, cp.w0, cp.wa) * (1 + 3 * wOf(aa, cp.w0, cp.wa)) + edeTerm(aa)) / e2; };
   let zacc = null; for (let z = 0; z < 20; z += 0.002) { if (q(1 / (1 + z)) > 0) { zacc = z; break; } }
   let zML = null; for (let z = 0; z < 50; z += 0.002) { const aa = 1 / (1 + z); if (cp.Om / aa ** 3 > cp.OL * deF(aa, cp.w0, cp.wa)) { zML = z; break; } }
   return { ts, as, outcome, tEnd, q0: q(1), zacc, zML, tH, turned };
@@ -731,6 +760,7 @@ function components(R, a, T) {
     { id: 'plasma', name: 'Other thermal particles', rho: Math.max(rall - rg - rnu, 0), p: Math.max(pall - rg / 3 - rnu / 3, 0) },
     { id: 'matter', name: 'Cold matter (dark matter + baryons)', rho: rhoc * cp.Om / a ** 3, p: 0 },
     { id: 'de', name: 'Dark energy', rho: rde, p: w * rde },
+    ...(cp.ede && cp.ede.on ? [{ id: 'ede', name: 'Early dark energy', rho: cp.ede.rhoA(a) * u, p: cp.ede.w(a) * cp.ede.rhoA(a) * u }] : []),
   ];
 }
 // Einstein-equation bookkeeping at one moment (a, T)
@@ -738,13 +768,14 @@ function einstein(R, a, T) {
   const G = SI.G, c = SI.c, comps = components(R, a, T);
   let rho = 0, p = 0; for (const x of comps) { rho += x.rho; p += x.p; }
   const kterm = -R.cp.Ok * (R.cp.h * U.H100s) ** 2 / (a * a);          // −kc²/a² in s⁻²
-  const H2 = 8 * PI * G / 3 * rho + kterm, addot = -4 * PI * G / 3 * (rho + 3 * p);
+  const xi2 = (R.cp.xi || 1) ** 2;   // the expansion-speed factor acts as an effective G for the expansion
+  const H2 = xi2 * (8 * PI * G / 3 * rho + kterm), addot = -xi2 * 4 * PI * G / 3 * (rho + 3 * p);
   const Ricci = 8 * PI * G * (rho - 3 * p) / (c * c);                  // m⁻²
-  const Kret = 12 * (addot * addot + (8 * PI * G / 3 * rho) ** 2) / c ** 4; // m⁻⁴
+  const Kret = 12 * (addot * addot + (xi2 * 8 * PI * G / 3 * rho) ** 2) / c ** 4; // m⁻⁴
   for (const x of comps) {
     x.w = x.rho > 0 ? x.p / x.rho : 0;
-    x.shareH2 = 8 * PI * G / 3 * x.rho / Math.max(H2, 1e-300);
-    x.acc = -4 * PI * G / 3 * (x.rho + 3 * x.p);                        // contribution to ä/a [s⁻²]
+    x.shareH2 = xi2 * 8 * PI * G / 3 * x.rho / Math.max(H2, 1e-300);
+    x.acc = -xi2 * 4 * PI * G / 3 * (x.rho + 3 * x.p);                  // contribution to ä/a [s⁻²]
   }
   return { comps, rho, p, w: p / rho, H2, H: Math.sqrt(Math.max(H2, 0)), addot, kterm, Ricci, Kret, lcurv: Math.pow(Kret, -0.25) };
 }
@@ -857,7 +888,8 @@ function etaFromOmegaB(omega_b, T0) { return 273.9e-10 * omega_b * Math.pow(2.72
 
 function run(Pin) {
   const P = Object.assign({}, DEFAULTS, Pin, { massScale: Object.assign({}, (Pin && Pin.massScale) || {}), off: Object.assign({}, (Pin && Pin.off) || {}) });
-  const thKey = JSON.stringify([P.massScale, P.off, P.me_s, P.T_qcd, P.T_dnu, P.Neff, P.dN_inj, P.T_inj]);
+  const thKey = JSON.stringify([P.massScale, P.off, P.me_s, P.T_qcd, P.T_dnu, P.Neff, P.dN_inj, P.T_inj, P.xi,
+    P.f_ede > 0 ? [P.f_ede, P.z_ede, P.omega_b, P.omega_c, P.omega_L, P.mnu, P.T0] : 0]);
   const th = memo('th' + thKey, () => makeThermo(P));
   const inf = inflation(P);
   const ns = P.link_inf ? inf.ns : P.ns;
@@ -869,7 +901,8 @@ function run(Pin) {
   const dmOmega = P.dm_mode === 'freezein' && dmAlt ? dmAlt.fi.omegah2 : P.dm_mode === 'axion' && dmAlt ? dmAlt.ax.omegah2 : P.dm_mode === 'adm' && dmAlt ? dmAlt.adm.omegah2 : dm.omegah2;
   const omega_c = P.link_dm ? dmOmega : P.omega_c;
   const mul = Array.from({ length: 11 }, (_, r) => (P.bbn_mul && P.bbn_mul[r]) || 1);
-  const bo = { eta, Neff: P.Neff, dNinj: P.dN_inj, TinjMeV: P.T_inj * 1e3, tau_n: P.tau_n, Q_s: P.Q_s, me_s: P.me_s, G_s: P.G_s, BD_s: P.BD_s, mul };
+  const bo = { eta, Neff: P.Neff, dNinj: P.dN_inj, TinjMeV: P.T_inj * 1e3, tau_n: P.tau_n, Q_s: P.Q_s, me_s: P.me_s, G_s: P.G_s, BD_s: P.BD_s, mul,
+    xi: P.xi || 1, edeRho: th.ede.on ? th.ede.rhoc * 1e12 : 0, edeTc: th.ede.on ? th.ede.Tc * 1e3 : 0 };
   const nuc = memo('bbn' + JSON.stringify(bo), () => bbn(bo));
   const Yp = P.link_yp ? nuc.Yp : 0.245;
   const cp = cosmology(P, th, omega_b, omega_c);

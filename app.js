@@ -51,6 +51,9 @@ function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.ad
 
 /* ------------------------------------------------------------ controls */
 const C = {
+  xi: { l: 'Expansion speed ξ (H → ξ·H at all times)', min: 0.3, max: 3, log: 1, h: 'Phenomenological: the universe stretches ξ× faster than its contents dictate, while gravity’s pull on matter is unchanged.' },
+  f_ede: { l: 'Early dark energy: share of total energy f<sub>EDE</sub>', min: 0, max: 0.9, h: 'Acts like a cosmological constant until z_c, then dilutes as a⁻⁶.' },
+  z_ede: { l: '…peaking at redshift z<sub>c</sub>', min: 3, max: 1e14, log: 1, h: '~3500: before recombination · ~10⁹: during BBN · ~10¹³: during dark-matter freeze-out' },
   T_rh: { l: 'Reheating temperature T<sub>rh</sub>', u: 'GeV', min: 1e-3, max: 1e16, log: 1, h: 'Hottest temperature of the plasma after inflation.' },
   M_X: { l: 'Mass of decaying particle M<sub>X</sub>', u: 'GeV', min: 1, max: 1e16, log: 1, h: 'Sets WHEN the asymmetry is made: T ≈ M<sub>X</sub>/few.' },
   K: { l: 'Decay parameter K = Γ<sub>X</sub>/H(M<sub>X</sub>)', min: 1e-3, max: 1e4, log: 1, h: 'K ≪ 1: slow, far out of equilibrium. K ≫ 1: inverse decays wash the asymmetry out.' },

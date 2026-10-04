@@ -21,6 +21,7 @@
   </div>
   <nav id="tabs">
     <button data-t="seq" class="on">Genesis timeline</button>
+    <button data-t="sim">Universe simulator</button>
     <button data-t="spacetime">Spacetime &amp; gravity</button>
     <button data-t="thermal">Thermal history</button>
     <button data-t="inflation">Inflation</button>
@@ -94,6 +95,41 @@
     <div class="stack">
       <div class="panel"><div class="ph"><h3>Consequences of this history</h3><span class="muted" style="font-size:11px" id="seq-cmp">Δ vs standard ΛCDM</span></div><div class="stats" id="seq-stats"></div></div>
       <div class="panel"><h3>Physics notes</h3><ul class="notes" id="seq-notes"></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ SIMULATOR -->
+<section data-tab="sim">
+  <div class="intro">Two universes on the same cosmic clock. <b>Left:</b> our standard universe. <b>Right:</b> yours. Each panel shows the same comoving patch of space (the same seed fluctuations): its <b>size grows with that universe’s scale factor a(t)</b>, its plasma <b>glows and cools</b> with its own temperature, its <b>cosmic web grows</b> with its own growth factor, galaxies <b>light up</b> when its first stars form, and its <b>ending</b> plays out. Make expansion faster or slower, add early dark energy, dark matter or radiation, and press play.</div>
+  <div class="lab">
+    <div class="panel ctrlpanel">
+      <h3>Expansion &amp; energy content</h3>
+      <div class="ctrls" data-c="xi,f_ede,z_ede"></div>
+      <div class="ctrls" data-c="link_dm,omega_c,omega_L,w0,Neff,As"></div>
+      <h3>Compare against</h3>
+      <div class="ctl"><select id="sim-ref"><option value="std">Standard ΛCDM</option><option value="pin">Pinned universe</option></select></div>
+      <h3>Presets</h3>
+      <div class="hero-btns" id="sim-presets"></div>
+    </div>
+    <div class="stack">
+      <div class="panel">
+        <div class="sim-row"><div class="sim-cell"><div class="sim-title" id="sim-tl">Standard universe</div><canvas id="sim-a"></canvas></div><div class="sim-cell"><div class="sim-title" id="sim-tr">Your universe</div><canvas id="sim-b"></canvas></div></div>
+        <div class="sim-ctl">
+          <button class="btn primary" id="sim-play">▶ Play</button>
+          <input type="range" id="sim-t" min="0" max="1000" value="0">
+          <span class="mono" id="sim-tlab"></span>
+          <select class="btn" id="sim-speed"><option value="40">slow</option><option value="20" selected>normal</option><option value="9">fast</option></select>
+        </div>
+        <p class="muted" id="sim-cap" style="font-size:12px;margin-bottom:0"></p>
+      </div>
+      <div class="panel"><div class="stats" id="s-sim"></div></div>
+      <div class="grid2">
+        <div class="panel"><div class="ph"><h3>Scale factor a(t)</h3></div><div class="chart short" id="c-sima"></div></div>
+        <div class="panel"><div class="ph"><h3>Structure growth D(t)</h3></div><div class="chart short" id="c-simd"></div></div>
+        <div class="panel"><div class="ph"><h3>Expansion rate H(t)</h3></div><div class="chart short" id="c-simh"></div></div>
+        <div class="panel"><div class="ph"><h3>What fills your universe</h3></div><div class="chart short" id="c-sime"></div></div>
+      </div>
     </div>
   </div>
 </section>
@@ -442,5 +478,6 @@
 <script src="plot.js"></script>
 <script src="app.js"></script>
 <script src="lab2.js"></script>
+<script src="sim.js"></script>
 </body>
 </html>

@@ -33,6 +33,20 @@ node serve.js 8777        # then open http://localhost:8777
 Earlier epochs feed later ones (η → BBN & CMB, Ω_DM → structure, Y_p → recombination, n_s → P(k));
 each link can be cut to set the downstream quantity by hand.
 
+## Universe simulator (sim.js)
+
+Two universes animated side by side on one cosmic clock — standard (or a pinned universe) vs yours.
+Each shows the same comoving patch: its size follows that universe's a(t), the plasma glows and cools
+with T = T₀/a, the cosmic web grows with σ₈·D(t), galaxies light up at its first-star epoch, and the
+ending plays out (eternal expansion, Big Rip with structures torn apart, or turnaround and Big Crunch).
+
+New knobs, propagated through every stage (freeze-outs, BBN, recombination, growth, fate):
+- **Expansion speed ξ** — H → ξH at all times while gravity's pull on matter is unchanged
+  (faster: more helium and dark matter, less structure; slower: the opposite).
+- **Early dark energy** — fraction f at redshift z_c, Λ-like before z_c and diluting as a⁻⁶ after
+  (before recombination it shrinks the sound horizon; during BBN it raises helium; at ~10¹³ it changes
+  the dark-matter relic density).
+
 ## Extended laboratory (physics-ext.js + lab2.js)
 
 | Feature | What is computed |
